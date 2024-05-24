@@ -1,0 +1,31 @@
+{
+  "name": "@jpow18/pdf.js.viewer",
+  "version": "1.0.1",
+  "main": "./PdfJsViewer.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jpow18/pdf.js.viewer"
+  },
+  "description": "A wrapper around PDF.js, providing a simplified interface for viewing and interacting with PDF documents within web applications. This wrapper is primarily focused on rendering interactive forms without all the overhead that comes with the PDF.js viewer.",
+  "keywords": [
+    "Mozilla",
+    "pdf",
+    "pdf.js"
+  ],
+  "files": [
+    "dist/*",
+    "pdf.js.viewer.css"
+  ],
+  "author": "jpow18",
+  "license": "MIT",
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "pdfjs-dist": "^4.2.67",
+    "rollup": "^4.18.0"
+  }
+}
