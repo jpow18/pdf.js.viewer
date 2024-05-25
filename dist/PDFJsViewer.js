@@ -83825,7 +83825,6 @@ class PDFJsViewer {
 
         try {
             await this.loadDocument(pdfUrl);
-            let pageNumber = this.getCurrentPageNumber();
             const pdfPage = await this.loadedDoc.getPage(pageNumber);
             // Add values passed to renderPage to annotation storage for eventual rendering
             Object.entries(values).forEach(([key, value]) => {
