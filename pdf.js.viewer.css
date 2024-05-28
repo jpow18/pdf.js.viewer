@@ -37,49 +37,6 @@
     transform-origin:0% 0%;
   }
 
-  .highlight{
-    --highlight-bg-color:rgb(180 0 170 / 0.25);
-    --highlight-selected-bg-color:rgb(0 100 0 / 0.25);
-    --highlight-backdrop-filter:none;
-    --highlight-selected-backdrop-filter:none;
-
-    @media screen and (forced-colors: active){
-      --highlight-bg-color:transparent;
-      --highlight-selected-bg-color:transparent;
-      --highlight-backdrop-filter:var(--hcm-highlight-filter);
-      --highlight-selected-backdrop-filter:var(
-        --hcm-highlight-selected-filter
-      );
-    }
-
-    margin:-1px;
-    padding:1px;
-    background-color:var(--highlight-bg-color);
-    backdrop-filter:var(--highlight-backdrop-filter);
-    border-radius:4px;
-
-    &.appended{
-      position:initial;
-    }
-
-    &.begin{
-      border-radius:4px 0 0 4px;
-    }
-
-    &.end{
-      border-radius:0 4px 4px 0;
-    }
-
-    &.middle{
-      border-radius:0;
-    }
-
-    &.selected{
-      background-color:var(--highlight-selected-bg-color);
-      backdrop-filter:var(--highlight-selected-backdrop-filter);
-    }
-  }
-
   ::selection{
     background:color-mix(in srgb, AccentColor, transparent 75%);
   }
@@ -106,55 +63,6 @@
   --input-disabled-border-color:transparent;
   --input-hover-border-color:black;
   --link-outline:none;
-
-  @media screen and (forced-colors: active){
-    --input-focus-border-color:CanvasText;
-    --input-unfocused-border-color:ActiveText;
-    --input-disabled-border-color:GrayText;
-    --input-hover-border-color:Highlight;
-    --link-outline:1.5px solid LinkText;
-
-    .textWidgetAnnotation :is(input, textarea):required,
-    .choiceWidgetAnnotation select:required,
-    .buttonWidgetAnnotation:is(.checkBox, .radioButton) input:required{
-      outline:1.5px solid selectedItem;
-    }
-
-    .linkAnnotation{
-      outline:var(--link-outline);
-
-      &:hover{
-        backdrop-filter:var(--hcm-highlight-filter);
-      }
-
-      & > a:hover{
-        opacity:0 !important;
-        background:none !important;
-        box-shadow:none;
-      }
-    }
-
-    .popupAnnotation .popup{
-      outline:calc(1.5px * var(--scale-factor)) solid CanvasText !important;
-      background-color:ButtonFace !important;
-      color:ButtonText !important;
-    }
-
-    .highlightArea:hover::after{
-      position:absolute;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      backdrop-filter:var(--hcm-highlight-filter);
-      content:"";
-      pointer-events:none;
-    }
-
-    .popupAnnotation.focused .popup{
-      outline:calc(3px * var(--scale-factor)) solid Highlight !important;
-    }
-  }
 
   position:absolute;
   top:0;
@@ -537,45 +445,6 @@
   }
 }
 
-:root{
-  --outline-width:2px;
-  --outline-color:#0060df;
-  --outline-around-width:1px;
-  --outline-around-color:#f0f0f4;
-  --hover-outline-around-color:var(--outline-around-color);
-  --focus-outline:solid var(--outline-width) var(--outline-color);
-  --unfocus-outline:solid var(--outline-width) transparent;
-  --focus-outline-around:solid var(--outline-around-width) var(--outline-around-color);
-  --hover-outline-color:#8f8f9d;
-  --hover-outline:solid var(--outline-width) var(--hover-outline-color);
-  --hover-outline-around:solid var(--outline-around-width) var(--hover-outline-around-color);
-  --freetext-line-height:1.35;
-  --freetext-padding:2px;
-  --resizer-bg-color:var(--outline-color);
-  --resizer-size:6px;
-  --resizer-shift:calc(
-    0px - (var(--outline-width) + var(--resizer-size)) / 2 -
-      var(--outline-around-width)
-  );
-  --editorFreeText-editing-cursor:text;
-  --editorInk-editing-cursor:url(images/cursor-editorInk.svg) 0 16, pointer;
-  --editorHighlight-editing-cursor:url(images/cursor-editorTextHighlight.svg) 24 24, text;
-  --editorFreeHighlight-editing-cursor:url(images/cursor-editorFreeHighlight.svg) 1 18, pointer;
-}
-.visuallyHidden{
-  position:absolute;
-  top:0;
-  left:0;
-  border:0;
-  margin:0;
-  padding:0;
-  width:0;
-  height:0;
-  overflow:hidden;
-  white-space:nowrap;
-  font-size:0;
-}
-
 .textLayer.highlighting{
   cursor:var(--editorFreeHighlight-editing-cursor);
 
@@ -586,34 +455,6 @@
   &.free span{
     cursor:var(--editorFreeHighlight-editing-cursor);
   }
-}
-
-@media (min-resolution: 1.1dppx){
-  :root{
-    --editorFreeText-editing-cursor:url(images/cursor-editorFreeText.svg) 0 16, text;
-  }
-}
-
-@media screen and (forced-colors: active){
-  :root{
-    --outline-color:CanvasText;
-    --outline-around-color:ButtonFace;
-    --resizer-bg-color:ButtonText;
-    --hover-outline-color:Highlight;
-    --hover-outline-around-color:SelectedItemText;
-  }
-}
-
-[data-editor-rotation="90"]{
-  transform:rotate(90deg);
-}
-
-[data-editor-rotation="180"]{
-  transform:rotate(180deg);
-}
-
-[data-editor-rotation="270"]{
-  transform:rotate(270deg);
 }
 
 .annotationEditorLayer{
@@ -758,58 +599,6 @@
   height:100%;
 }
 
-#altText
-.colorPicker{
-  --hover-outline-color:#0250bb;
-  --selected-outline-color:#0060df;
-  --swatch-border-color:#cfcfd8;
-
-  @media (prefers-color-scheme: dark){
-    --hover-outline-color:#80ebff;
-    --selected-outline-color:#aaf2ff;
-    --swatch-border-color:#52525e;
-  }
-
-  @media screen and (forced-colors: active){
-    --hover-outline-color:Highlight;
-    --selected-outline-color:var(--hover-outline-color);
-    --swatch-border-color:ButtonText;
-  }
-
-  .swatch{
-    width:16px;
-    height:16px;
-    border:1px solid var(--swatch-border-color);
-    border-radius:100%;
-    outline-offset:2px;
-    box-sizing:border-box;
-    forced-color-adjust:none;
-  }
-
-  button:is(:hover, .selected) > .swatch{
-    border:none;
-  }
-}
-
-@media screen and (forced-colors: active){
-  :root{
-    --pdfViewer-padding-bottom:9px;
-    --page-margin:8px auto -1px;
-    --page-border:1px solid CanvasText;
-    --spreadHorizontalWrapped-margin-LR:3.5px;
-  }
-}
-
-[data-main-rotation="90"]{
-  transform:rotate(90deg) translateY(-100%);
-}
-[data-main-rotation="180"]{
-  transform:rotate(180deg) translate(-100%, -100%);
-}
-[data-main-rotation="270"]{
-  transform:rotate(270deg) translateX(-100%);
-}
-
 #hiddenCopyElement,
 .hiddenCanvasElement{
   position:absolute;
@@ -818,25 +607,4 @@
   width:0;
   height:0;
   display:none;
-}
-
-*{
-  padding:0;
-  margin:0;
-}
-
-html,
-body{
-  height:100%;
-  width:100%;
-}
-
-body{
-  background-color:var(--body-bg-color);
-  scrollbar-color:var(--scrollbar-color) var(--scrollbar-bg-color);
-}
-
-.hidden,
-[hidden]{
-  display:none !important;
 }
