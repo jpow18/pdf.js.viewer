@@ -1,15 +1,15 @@
-const Canvas = require('./lib/canvas');
-const Image = require('./lib/image');
-const CanvasRenderingContext2D = require('./lib/context2d');
-const CanvasPattern = require('./lib/pattern');
-const parseFont = require('./lib/parse-font');
-const packageJson = require('./package.json');
-const bindings = require('./lib/bindings');
-const fs = require('fs');
-const PNGStream = require('./lib/pngstream');
-const PDFStream = require('./lib/pdfstream');
-const JPEGStream = require('./lib/jpegstream');
-const { DOMPoint, DOMMatrix } = require('./lib/DOMMatrix');
+import Canvas from './lib/canvas';
+import Image from './lib/image';
+import CanvasRenderingContext2D from './lib/context2d';
+import CanvasPattern from './lib/pattern';
+import parseFont from './lib/parse-font';
+import packageJson from './package.json';
+import bindings from './lib/bindings';
+import fs from 'fs';
+import PNGStream from './lib/pngstream';
+import PDFStream from './lib/pdfstream';
+import JPEGStream from './lib/jpegstream';
+import { DOMPoint, DOMMatrix } from './lib/DOMMatrix';
 
 function createCanvas (width, height, type) {
   return new Canvas(width, height, type)
@@ -55,40 +55,16 @@ function deregisterAllFonts () {
   return Canvas._deregisterAllFonts()
 }
 
-exports.Canvas = Canvas;
-exports.Context2d = CanvasRenderingContext2D; // Legacy/compat export
-exports.CanvasRenderingContext2D = CanvasRenderingContext2D;
-exports.CanvasGradient = bindings.CanvasGradient;
-exports.CanvasPattern = CanvasPattern;
-exports.Image = Image;
-exports.ImageData = bindings.ImageData;
-exports.PNGStream = PNGStream;
-exports.PDFStream = PDFStream;
-exports.JPEGStream = JPEGStream;
-exports.DOMMatrix = DOMMatrix;
-exports.DOMPoint = DOMPoint;
+export { Canvas, Context2d as CanvasRenderingContext2D }; // Note: Renamed Context2d to avoid conflict with global object
+export { CanvasRenderingContext2D };
+export { CanvasPattern };
+export { Image };
+export { ImageData as ImageData }; // Assuming bindings.ImageData is exported elsewhere
+export { PNGStream };
+export { PDFStream };
+export { JPEGStream };
+export { DOMMatrix };
+export { DOMPoint };
 
-exports.registerFont = registerFont;
-exports.deregisterAllFonts = deregisterAllFonts;
-exports.parseFont = parseFont;
-
-exports.createCanvas = createCanvas;
-exports.createImageData = createImageData;
-exports.loadImage = loadImage;
-
-exports.backends = bindings.Backends;
-
-/** Library version. */
-exports.version = packageJson.version;
-/** Cairo version. */
-exports.cairoVersion = bindings.cairoVersion;
-/** jpeglib version. */
-exports.jpegVersion = bindings.jpegVersion;
-/** gif_lib version. */
-exports.gifVersion = bindings.gifVersion ? bindings.gifVersion.replace(/[^.\d]/g, '') : undefined;
-/** freetype version. */
-exports.freetypeVersion = bindings.freetypeVersion;
-/** rsvg version. */
-exports.rsvgVersion = bindings.rsvgVersion;
-/** pango version. */
-exports.pangoVersion = bindings.pangoVersion;
+// Functions and properties to export
+export { registerFont, deregisterAllFonts, parseFont, createCanvas, createImageData, loadImage, backends, version, cairoVersion, jpegVersion, gifVersion, freetypeVersion, rsvgVersion, pangoVersion };
