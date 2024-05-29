@@ -56,7 +56,6 @@ function deregisterAllFonts () {
 }
 
 export { Canvas, Context2d as CanvasRenderingContext2D }; // Note: Renamed Context2d to avoid conflict with global object
-export { CanvasRenderingContext2D };
 export { CanvasPattern };
 export { Image };
 export { ImageData as ImageData }; // Assuming bindings.ImageData is exported elsewhere

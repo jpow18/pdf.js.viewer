@@ -1,6 +1,6 @@
 {
   "name": "@jpow18/pdf.js.viewer",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "main": "./PdfJsViewer.js",
   "type": "module",
   "scripts": {
