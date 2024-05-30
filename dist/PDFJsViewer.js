@@ -83745,7 +83745,9 @@ class PDFJsViewer {
             eventBus: this.eventBus,
         };
         // Child element is essential for functioning of pdf.js
-        this.options.container.style = "position: absolute";
+        let currentStyle = this.options.container.style.cssText;
+        let newStyle = "position: absolute;";
+        this.options.container.style = `${currentStyle} ${newStyle}`;
         let childDiv = document.createElement('div');
         childDiv.setAttribute('id', 'innerContainer');
         this.options.container.appendChild(childDiv);
