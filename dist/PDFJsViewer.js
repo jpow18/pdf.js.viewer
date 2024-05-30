@@ -83828,9 +83828,18 @@ class PDFJsViewer {
         try {
             await this.loadDocument(pdfUrl);
             const pdfPage = await this.loadedDoc.getPage(pageNumber);
+            const annotations = await pdfPage.getAnnotations();
             // Add values passed to renderPage to annotation storage for eventual rendering
             Object.entries(values).forEach(([key, value]) => {
-                this.loadedDoc.annotationStorage.setValue(key, {value: value});
+                let foundKey = null;
+                annotations.forEach((annotation) => {
+                    if (Object.values(annotation).includes(key)) {
+                        foundKey = annotation.id; 
+                    }
+                });
+                if (foundKey!== null) { 
+                    this.loadedDoc.annotationStorage.setValue(foundKey, {value: value});
+                }
             });
         
             const viewport = pdfPage.getViewport({ scale: 1 });
