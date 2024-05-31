@@ -83762,9 +83762,14 @@ class PDFJsViewer {
             enableHighlightFloatingButton: true,
             mlManager: null,
         });
+        this.pdfUrl = null;
         this.loadedDoc = null;
         this.numPages = null;
         this.currentPageNumber = null;
+        this.data = {};
+        this.formRenderingOptions = {};
+        this.width = null;
+        this.height = null;
     }
 
     getCurrentPageNumber() {
@@ -83795,6 +83800,22 @@ class PDFJsViewer {
         } 
     }
 
+    async loadPage(pageNumber) {
+        try {
+            this.savePageData();
+            var width = this.width;
+            let height = this.height;
+            this.loadedDoc.getPage(pageNumber).then(function(page) {
+                this.render(width, height, this.pdfUrl, pageNumber, {}, this.formRenderingOptions);
+                this.currentPage = pageNumber;
+            }.bind(this));
+            return true;
+        } catch (e) {
+            alert(e.message);
+        }
+        return false;
+    }
+
     navigateToNextPage() {
         let currentPageNumber = this.getCurrentPageNumber();
         const pagesCount = this.numPages;
@@ -83821,8 +83842,17 @@ class PDFJsViewer {
             throw new Error("At least one dimension must be specified.");
         }
 
+        this.width = width;
+        this.height = height;
+
         if (!pdfUrl) {
             throw new Error("Path to PDF must be given");
+        }
+        this.pdfUrl = pdfUrl;
+
+        if (Object.keys(formRenderingOptions).length !== 0)
+        {
+            this.formRenderingOptions = formRenderingOptions;
         }
 
         try {
@@ -83879,6 +83909,17 @@ class PDFJsViewer {
            this.PDFPageView.draw();
         } catch (error) {
             console.error('Error loading document:', error);
+        }
+    }
+
+    async savePageData() {
+        try {
+            const tempData = await this.getFormValues();
+            for (const prop in tempData) {
+                this.data[prop] = tempData[prop]; 
+            }
+        } catch (e) {
+            alert(e.message);
         }
     }
 }
