@@ -83766,10 +83766,11 @@ class PDFJsViewer {
         this.loadedDoc = null;
         this.numPages = null;
         this.currentPageNumber = null;
-        this.data = {};
+        this.formData = {};
         this.formRenderingOptions = {};
         this.width = null;
         this.height = null;
+        this.annotations = null;
     }
 
     getCurrentPageNumber() {
@@ -83805,15 +83806,26 @@ class PDFJsViewer {
             this.savePageData();
             var width = this.width;
             let height = this.height;
-            this.loadedDoc.getPage(pageNumber).then(function(page) {
-                this.render(width, height, this.pdfUrl, pageNumber, {}, this.formRenderingOptions);
+
+            if (this.PDFPageView) {
+                this.PDFPageView.destroy();
+                this.PDFPageView = null;
+            }
+
+            // If loadPage is called as part of navigating to a new page, 
+            // Must remove the previous pages div for proper rendering
+            const childDiv = document.querySelector('.page');
+            if (childDiv && childDiv.parentNode) {
+                childDiv.parentNode.removeChild(childDiv);
+            }
+
+            this.loadedDoc.getPage(pageNumber).then(function() {
+                this.render(width, height, this.pdfUrl, pageNumber, this.formData, this.formRenderingOptions);
                 this.currentPage = pageNumber;
             }.bind(this));
-            return true;
         } catch (e) {
             alert(e.message);
         }
-        return false;
     }
 
     navigateToNextPage() {
@@ -83867,7 +83879,7 @@ class PDFJsViewer {
             const pdfPage = await this.loadedDoc.getPage(pageNumber);
             const annotations = await pdfPage.getAnnotations();
             this.annotations = annotations;
-            // Add values passed to renderPage to annotation storage for eventual rendering
+            // Add values passed to render to annotation storage for eventual rendering
             Object.entries(this.formData).forEach(([key, value]) => {
                 let foundKey = null;
                 annotations.forEach((annotation) => {
