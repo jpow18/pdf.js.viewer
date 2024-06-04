@@ -94430,9 +94430,6 @@ var jquery = {exports: {}};
 var jqueryExports = jquery.exports;
 var jQuery = /*@__PURE__*/getDefaultExportFromCjs(jqueryExports);
 
-// Or just use jQuery directly if you prefer
-
-
 class PDFJsViewer {
     constructor(targetDiv, viewerConfigOptions = {}) {
         this.targetDiv = targetDiv;
@@ -94466,6 +94463,7 @@ class PDFJsViewer {
             mlManager: null,
         });
         this.pdfUrl = null;
+        this.pdfDataUrl = null;
         this.loadedDoc = null;
         this.numPages = null;
         this.currentPageNumber = null;
@@ -94513,8 +94511,12 @@ class PDFJsViewer {
     loaderStart() {
         if (!jQuery('#loader').length) {
             var icon = jQuery('#APP_ICON');
-            icon.hide();
-            icon.after('<div id="loader" style="display:block;"><font style="font-size:150%"><i class="fa fa-cog fa-spin"></i></font></div>');
+            if (icon.length > 0) {
+                icon.hide();
+                icon.after('<div id="loader" style="display:block;"><font style="font-size:150%"><i class="fa fa-cog fa-spin"></i></font></div>');
+            } else {
+                console.error('Icon not found');
+            }
         }
     }
 
@@ -94536,12 +94538,58 @@ class PDFJsViewer {
                 childDiv.parentNode.removeChild(childDiv);
             }
 
+            this.loaderStart();
+
             this.loadedDoc.getPage(pageNumber).then(function() {
-                this.render(width, height, this.pdfUrl, pageNumber, this.formData, this.formRenderingOptions);
+                this.render(width, height, this.pdfUrl, false, pageNumber, this.formData, this.formRenderingOptions);
+                this.loaderEnd();
                 this.currentPage = pageNumber;
             }.bind(this));
         } catch (e) {
             alert(e.message);
+        }
+    }
+
+    loadPdfData(pdfDataUrl) {
+        this.pdfDataUrl = pdfDataUrl;
+        if (typeof pdfDataUrl!="undefined" && pdfDataUrl!==false) {
+            try {
+                this.loaderStart();
+                jQuery.ajax({
+                    dataType: "json",
+                    url: pdfDataUrl,
+                    async: false,
+                    method: "GET",
+                    success: (results) => {
+                        try {
+                            if (results.success) {
+                                if (typeof results.data !== 'undefined') {
+                                    this.formData = results.data;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error in success callback:', e);
+                        }
+                    },
+                    fail: () => {
+                        this.loaderEnd();
+                    },
+                    complete: () => {
+                        // this.loaderEnd();
+                    }
+                });
+            } catch (e) {
+                this.loaderEnd();
+                console.error('Error in AJAX call:', e);
+            }
+        }
+    }
+
+    mergeFormData(newFormData) {
+        for (const key in newFormData) {
+            if (this.formData.hasOwnProperty(key)) {
+                this.formData[key] = newFormData[key];
+            }
         }
     }
 
@@ -94566,7 +94614,7 @@ class PDFJsViewer {
         return this.getCurrentPageNumber();
     }
 
-    async render(width = false, height = false, pdfUrl, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
+    async render(width = false, height = false, pdfUrl, pdfDataUrl, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
         if (width == false && height == false) {
             throw new Error("At least one dimension must be specified.");
         }
@@ -94578,12 +94626,19 @@ class PDFJsViewer {
             throw new Error("Path to PDF must be given");
         }
 
+        let target = document.getElementById(this.targetDiv);
+        target.innerHTML ='<div id="loader" style=\"margin:5px\"><i class=\"fa fa-cog fa-spin\"></i></div>';
+
         if (!this.pdfUrl) {
             this.pdfUrl = pdfUrl;
         }
 
+        if (pdfDataUrl) {
+            this.loadPdfData(pdfDataUrl);
+        }
+
         if (values) {
-            this.formData = values;
+            this.mergeFormData(values);
         }
 
         if (Object.keys(formRenderingOptions).length !== 0)
@@ -94643,6 +94698,7 @@ class PDFJsViewer {
             this.PDFPageView = currentPageView;
             this.PDFPageView.setPdfPage(pdfPage);
 
+            this.loaderEnd();
             this.PDFPageView.draw();
         } catch (error) {
             console.error('Error loading document:', error);
@@ -94698,19 +94754,19 @@ class PDFJsViewer {
                         }
                         else {
                             if (typeof results.message != 'undefined') {
-                                alert(results.message);
+                                console.error(results.message);
                             }
                         }
                     }
                     catch (e) {}
                 },
                 fail: function() {
-                    this.loaderEnd(true);
+                    this.loaderEnd();
                 },
                 complete: function() {
                     this.saving = false;
                     // Schedule the next request when the current one's complete
-                    this.loaderEnd(true);
+                    this.loaderEnd();
                 }
             });
             return success;
