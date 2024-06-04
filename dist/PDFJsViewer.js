@@ -94473,6 +94473,7 @@ class PDFJsViewer {
         this.height = null;
         this.annotations = null;
         this.saving = false;
+        this._postRenderHook = null;
     }
 
     getCurrentPageNumber() {
@@ -94587,9 +94588,7 @@ class PDFJsViewer {
 
     mergeFormData(newFormData) {
         for (const key in newFormData) {
-            if (this.formData.hasOwnProperty(key)) {
-                this.formData[key] = newFormData[key];
-            }
+            this.formData[key] = newFormData[key];
         }
     }
 
@@ -94699,7 +94698,13 @@ class PDFJsViewer {
             this.PDFPageView.setPdfPage(pdfPage);
 
             this.loaderEnd();
-            this.PDFPageView.draw();
+            this.PDFPageView.draw().then(() => {
+                if (this._postRenderHook) {
+                    this._postRenderHook();
+                }
+            });
+
+
         } catch (error) {
             console.error('Error loading document:', error);
         }
@@ -94776,6 +94781,10 @@ class PDFJsViewer {
             alert(e.message);
         }
         return false;
+    }
+
+    setPostRenderHook(hook) {
+        this._postRenderHook = hook;
     }
 }
 
