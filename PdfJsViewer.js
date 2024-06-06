@@ -41,16 +41,24 @@ class PDFJsViewer {
         this.loadedDoc = null;
         this.numPages = null;
         this.currentPageNumber = null;
+        this.previousPageNumber = 1;
         this.formData = {};
         this.formRenderingOptions = {};
         this.width = null;
         this.height = null;
         this.annotations = null;
         this.saving = false;
+        this._postRenderHook = null;
+        this.dirty = false;
+        this.numberedPageNavigation = true;
     }
 
     getCurrentPageNumber() {
         return this.currentPageNumber;
+    }
+
+    getDirty() {
+        return this.dirty;
     }
 
     async getFormValues() {
@@ -63,6 +71,10 @@ class PDFJsViewer {
 
     getNumberOfPages() {
         return this.PDFViewer.pagesCount;
+    }
+
+    getPreviousPageNumber() {
+        return this.previousPageNumber;
     }
   
     async loadDocument(url) {
@@ -96,6 +108,11 @@ class PDFJsViewer {
 
     async loadPage(pageNumber) {
         try {
+            if (pageNumber == this.previousPageNumber)
+            {
+                return;
+            }
+
             this.savePageData();
             var width = this.width;
             let height = this.height;
@@ -113,11 +130,18 @@ class PDFJsViewer {
             }
 
             this.loaderStart();
-
             this.loadedDoc.getPage(pageNumber).then(function() {
                 this.render(width, height, this.pdfUrl, false, pageNumber, this.formData, this.formRenderingOptions);
                 this.loaderEnd();
-                this.currentPage = pageNumber;
+
+                if (this.numberedPageNavigation) {
+                    this.previousPageNumber = pageNumber;
+                }
+                else {
+                    this.previousPageNumber = this.currentPageNumber;
+                }
+                this.numberedPageNavigation = true;
+                this.currentPageNumber = pageNumber;
             }.bind(this));
         } catch (e) {
             alert(e.message);
@@ -161,31 +185,28 @@ class PDFJsViewer {
 
     mergeFormData(newFormData) {
         for (const key in newFormData) {
-            if (this.formData.hasOwnProperty(key)) {
-                this.formData[key] = newFormData[key];
-            }
+            this.formData[key] = newFormData[key];
         }
     }
 
     navigateToNextPage() {
-        let currentPageNumber = this.getCurrentPageNumber();
-        const pagesCount = this.numPages;
-        if (currentPageNumber >= pagesCount) {
-            return currentPageNumber;
+        if (this.currentPageNumber >= this.numPages) {
+            return this.currentPageNumber;
         }
-
+        this.numberedPageNavigation = false;
+        this.previousPageNumber = this.currentPageNumber;
         this.currentPageNumber++;
-        return this.getCurrentPageNumber();
+        return this.currentPageNumber;
     }
 
     navigateToPreviousPage() {
-        let currentPageNumber = this.getCurrentPageNumber();
-        if (currentPageNumber <= 1) {
-            return currentPageNumber;
+        if (this.currentPageNumber <= 1) {
+            return this.currentPageNumber;
         }
-
+        this.numberedPageNavigation = false;
+        this.previousPageNumber = this.currentPageNumber;
         this.currentPageNumber--;
-        return this.getCurrentPageNumber();
+        return this.currentPageNumber;
     }
 
     async render(width = false, height = false, pdfUrl, pdfDataUrl, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
@@ -245,7 +266,6 @@ class PDFJsViewer {
             const scaleY = viewportHeight / viewport.height;
             const scale = Math.min(scaleX, scaleY);
             const scaledViewport = pdfPage.getViewport({ scale });
-
             const interactiveForms = formRenderingOptions.interactiveForms;
 
             if (interactiveForms === false) {
@@ -271,34 +291,34 @@ class PDFJsViewer {
 
             this.PDFPageView = currentPageView;
             this.PDFPageView.setPdfPage(pdfPage);
-
             this.loaderEnd();
-            this.PDFPageView.draw();
+            this.PDFPageView.draw().then(() => {
+                if (this._postRenderHook) {
+                    this._postRenderHook();
+                }
+
+            });
         } catch (error) {
             console.error('Error loading document:', error);
         }
     }
 
-    async savePageData() {
-        try {
-            const tempData = await this.getFormValues();
-            for (const prop in tempData) {
-                let foundKey = null;
-                this.annotations.forEach((annotation) => {
-                    if (Object.values(annotation).includes(prop)) {
-                        foundKey = annotation.fieldName;
-                    }
-                });
-                this.formData[foundKey] = tempData[prop]["value"];
-            }
-        } catch (e) {
-            alert(e.message);
+    savePageData() {
+        const inputElements = jQuery('[data-element-id]');
+        const tempData = {};
+        inputElements.each(function() {
+            let id = jQuery(this).attr('id');
+            let value = jQuery(this).val();
+            tempData[id] = value;
+        })
+        for (const prop in tempData) {
+            this.formData[prop] = tempData[prop];
         }
     }
 
     async savePdfData(saveUrl, token = false) {
         try {
-            await this.savePageData();
+            this.savePageData();
             if (this.saving) {
                 alert('Already processing request.');
                 return false;
@@ -314,34 +334,37 @@ class PDFJsViewer {
                 postData.csrf = token;
             }
             this.loaderStart();
-            jQuery.ajax({
-                dataType: "json",
-                url: saveUrl,
-                async: false,
-                data: postData,
-                method: "POST",
-                context: this,
-                success: function(results) {
-                    try {
-                        if (results.success) {
-                            success = results;
-                        }
-                        else {
-                            if (typeof results.message != 'undefined') {
-                                console.error(results.message);
+            success = await new Promise((resolve, reject) => {
+                jQuery.ajax({
+                    dataType: "json",
+                    url: saveUrl,
+                    data: postData,
+                    method: "POST",
+                    context: this,
+                    success: function(results) {
+                        try {
+                            if (results.success) {
+                                resolve(results);
+                            } else {
+                                if (typeof results.message !== 'undefined') {
+                                    console.error(results.message);
+                                }
+                                resolve(false);
                             }
+                        } catch (e) {
+                            console.error(e);
+                            resolve(false);
                         }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('AJAX error: ', textStatus, errorThrown);
+                        resolve(false);
+                    },
+                    complete: function() {
+                        this.saving = false;
+                        this.loaderEnd();
                     }
-                    catch (e) {}
-                },
-                fail: function() {
-                    this.loaderEnd();
-                },
-                complete: function() {
-                    this.saving = false;
-                    // Schedule the next request when the current one's complete
-                    this.loaderEnd();
-                }
+                });
             });
             return success;
         }
@@ -350,6 +373,14 @@ class PDFJsViewer {
             alert(e.message);
         }
         return false;
+    }
+
+    setDirty() {
+        this.dirty = true;
+    }
+
+    setPostRenderHook(hook) {
+        this._postRenderHook = hook;
     }
 }
 
