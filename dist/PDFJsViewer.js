@@ -94925,12 +94925,18 @@ class PDFJsViewer {
         control.style.textAlign = itemProperties.textAlignment;
         control.id = itemProperties.id;
         control.name = itemProperties.id;
-        if (Math.floor(itemProperties.fontSizeControl) >= Math.floor(itemProperties.height - 2)) {
-            control.style.fontSize = Math.floor(itemProperties.height - 3) + 'px';
+        control.dataset.elementId = itemProperties.dataset.elementId;
+        if (Math.floor(itemProperties.fontSizeControl) >= Math.floor(itemProperties.clientHeight - 2)) {
+            control.style.fontSize = Math.floor(itemProperties.clientHeight - 3) + 'px';
         } else {
             control.style.fontSize = itemProperties.fontSizeControl + 'px';
         }
-        control.style.border = '1px solid #E6E6E6';
+        if (itemProperties.style.border == '1px dashed red') {
+            control.style.border = '1px dashed red';
+        }
+        else {
+            control.style.border = '1px solid #E6E6E6';
+        }
         control.style.display = 'block';
 
         var optionElement = document.createElement('option');
