@@ -94565,6 +94565,14 @@ class PDFJsViewer {
         return this.previousPageNumber;
     }
 
+    hasErrors(){
+        if (jQuery('[data-invalid]').length>0) {
+            alert('Please correct the invalid data entered first');
+            return true;
+        }
+        return false;
+    }
+
     async loadDocument(url) {
         const pdfDoc = await __webpack_exports__getDocument(url);
         const loadedDoc = await pdfDoc.promise;
@@ -94595,6 +94603,9 @@ class PDFJsViewer {
     }
 
     async loadPage(pageNumber) {
+        if (this.hasErrors()) {
+            return false;
+        }
         try {
             if (pageNumber == this.previousPageNumber)
             {
@@ -94813,6 +94824,7 @@ class PDFJsViewer {
                 inputElements.each(function() {
                     jQuery(this).css('background-color', '');
                     jQuery(this).css('color', '');
+                    // jQuery(this).css('font-size', '');
                     jQuery(this).css('margin-left', '3px');
                 });
             });
@@ -94835,6 +94847,9 @@ class PDFJsViewer {
     }
 
     async savePdfData(saveUrl, token = false) {
+        if (this.hasErrors()) {
+            return false;
+        }
         try {
             this.savePageData();
             if (this.saving) {
