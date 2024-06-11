@@ -94507,6 +94507,43 @@ class PDFJsViewer {
         return this.dirty;
     }
 
+    getElementPropertiesWithValues(obj) {
+        let properties = {};
+        Object.getOwnPropertyNames(obj).forEach((prop) => {
+            try {
+                properties[prop] = obj[prop];
+            } catch (e) {
+                properties[prop] = "Inaccessible";
+            }
+        });
+
+        Object.keys(obj).forEach((prop) => {
+            if (!(prop in properties)) {
+                try {
+                    properties[prop] = obj[prop];
+                } catch (e) {
+                    properties[prop] = "Inaccessible";
+                }
+            }
+        });
+
+        let proto = Object.getPrototypeOf(obj);
+        while (proto) {
+            Object.getOwnPropertyNames(proto).forEach((prop) => {
+                if (!(prop in properties)) {
+                    try {
+                        properties[prop] = obj[prop];
+                    } catch (e) {
+                        properties[prop] = "Inaccessible";
+                    }
+                }
+            });
+            proto = Object.getPrototypeOf(proto);
+        }
+
+        return properties;
+    }
+
     async getFormValues() {
         return this.loadedDoc._transport.annotationStorage.getAll();
     }
@@ -94774,43 +94811,6 @@ class PDFJsViewer {
         } catch (error) {
             console.error('Error loading document:', error);
         }
-    }
-
-    getElementPropertiesWithValues(obj) {
-        let properties = {};
-        Object.getOwnPropertyNames(obj).forEach((prop) => {
-            try {
-                properties[prop] = obj[prop];
-            } catch (e) {
-                properties[prop] = "Inaccessible";
-            }
-        });
-
-        Object.keys(obj).forEach((prop) => {
-            if (!(prop in properties)) {
-                try {
-                    properties[prop] = obj[prop];
-                } catch (e) {
-                    properties[prop] = "Inaccessible";
-                }
-            }
-        });
-
-        let proto = Object.getPrototypeOf(obj);
-        while (proto) {
-            Object.getOwnPropertyNames(proto).forEach((prop) => {
-                if (!(prop in properties)) {
-                    try {
-                        properties[prop] = obj[prop];
-                    } catch (e) {
-                        properties[prop] = "Inaccessible";
-                    }
-                }
-            });
-            proto = Object.getPrototypeOf(proto);
-        }
-
-        return properties;
     }
 
     savePageData() {
