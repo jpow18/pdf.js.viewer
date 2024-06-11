@@ -94476,7 +94476,27 @@ class PDFJsViewer {
         this.saving = false;
         this._postRenderHook = null;
         this.dirty = false;
-        this.numberedPageNavigation = false;
+        this.numberedPageNavigation = true;
+        this.idClosureOverrides = {};
+        this.idValueGetOverrides = {};
+    }
+
+    assertValidControlClosure(closure) {
+        if (typeof closure != 'function') {
+            throw "Passed item is not a function";
+        }
+        if (closure.length != 2) {
+            throw 'Passed function must accept two arguments: itemProperties and viewport';
+        }
+    }
+
+    assertValidIdValueClosure(closure) {
+        if (typeof closure != 'function') {
+            throw "Passed item is not a function";
+        }
+        if (closure.length != 1) {
+            throw 'Passed function must accept one arguments: element';
+        }
     }
 
     getCurrentPageNumber() {
@@ -94499,10 +94519,15 @@ class PDFJsViewer {
         return this.PDFViewer.pagesCount;
     }
 
+    getPdfData() {
+        this.savePageData();
+        return this.formData;
+    }
+
     getPreviousPageNumber() {
         return this.previousPageNumber;
     }
-  
+
     async loadDocument(url) {
         const pdfDoc = await __webpack_exports__getDocument(url);
         const loadedDoc = await pdfDoc.promise;
@@ -94538,7 +94563,6 @@ class PDFJsViewer {
             {
                 return;
             }
-
 
             this.savePageData();
             var width = this.width;
@@ -94611,6 +94635,13 @@ class PDFJsViewer {
         }
     }
 
+    async maskYesNo(id, pdfUrl, pageNumber) {
+        let c = function(itemProperties, viewport) {
+            return this.yesNoDropDown(itemProperties, viewport);
+        };
+        this.setControlRenderClosureById(c.bind(this), id);
+    }
+
     mergeFormData(newFormData) {
         for (const key in newFormData) {
             this.formData[key] = newFormData[key];
@@ -94622,7 +94653,6 @@ class PDFJsViewer {
             return this.currentPageNumber;
         }
         this.numberedPageNavigation = false;
-
         this.previousPageNumber = this.currentPageNumber;
         this.currentPageNumber++;
         return this.currentPageNumber;
@@ -94695,7 +94725,6 @@ class PDFJsViewer {
             const scaleY = viewportHeight / viewport.height;
             const scale = Math.min(scaleX, scaleY);
             const scaledViewport = pdfPage.getViewport({ scale });
-
             const interactiveForms = formRenderingOptions.interactiveForms;
 
             if (interactiveForms === false) {
@@ -94721,20 +94750,67 @@ class PDFJsViewer {
 
             this.PDFPageView = currentPageView;
             this.PDFPageView.setPdfPage(pdfPage);
-
             this.loaderEnd();
+            
             this.PDFPageView.draw().then(() => {
-
                 if (this._postRenderHook) {
                     this._postRenderHook();
                 }
 
+                // Check for custom closures
+                Object.entries(this.idClosureOverrides).forEach(([id, closure]) => {
+                    const item = jQuery("#" + id);
+                    const elementPropertiesWithValues = this.getElementPropertiesWithValues(item[0]);
+                    if (closure) {
+                        const control = closure(elementPropertiesWithValues, viewport);
+                        if (control) {
+                            const parent = item.parent();
+                            jQuery("#" + id).remove();
+                            parent[0].appendChild(control);
+                        }
+                    }
+                });
             });
-
-
         } catch (error) {
             console.error('Error loading document:', error);
         }
+    }
+
+    getElementPropertiesWithValues(obj) {
+        let properties = {};
+        Object.getOwnPropertyNames(obj).forEach((prop) => {
+            try {
+                properties[prop] = obj[prop];
+            } catch (e) {
+                properties[prop] = "Inaccessible";
+            }
+        });
+
+        Object.keys(obj).forEach((prop) => {
+            if (!(prop in properties)) {
+                try {
+                    properties[prop] = obj[prop];
+                } catch (e) {
+                    properties[prop] = "Inaccessible";
+                }
+            }
+        });
+
+        let proto = Object.getPrototypeOf(obj);
+        while (proto) {
+            Object.getOwnPropertyNames(proto).forEach((prop) => {
+                if (!(prop in properties)) {
+                    try {
+                        properties[prop] = obj[prop];
+                    } catch (e) {
+                        properties[prop] = "Inaccessible";
+                    }
+                }
+            });
+            proto = Object.getPrototypeOf(proto);
+        }
+
+        return properties;
     }
 
     savePageData() {
@@ -94809,12 +94885,83 @@ class PDFJsViewer {
         return false;
     }
 
+    setControlRenderClosureById(closure, id) {
+        if (!closure) {
+            try {
+                delete this.idClosureOverrides[id];
+            } catch (e) {
+            }
+        } else {
+            this.assertValidControlClosure(closure);
+            this.idClosureOverrides[id] = closure;
+        }
+    }
+
     setDirty() {
         this.dirty = true;
     }
 
+    setIdValueOverride(closure, id) {
+        if (!closure) {
+            try {
+                delete this.idValueGetOverrides[id];
+            } catch (e) {}
+        } else {
+            this.assertValidIdValueClosure(closure);
+            this.idValueGetOverrides[id] = closure;
+        }
+    }
+
     setPostRenderHook(hook) {
         this._postRenderHook = hook;
+    }
+
+    yesNoDropDown (itemProperties, viewport) {
+        var control = document.createElement('select');
+        if (itemProperties.multiSelect)
+            control.multiple = true;
+        control.style.width = Math.floor(itemProperties.clientWidth - 3) + 'px';
+        control.style.height = Math.floor(itemProperties.clientHeight) + 'px';
+        control.style.textAlign = itemProperties.textAlignment;
+        control.id = itemProperties.id;
+        control.name = itemProperties.id;
+        if (Math.floor(itemProperties.fontSizeControl) >= Math.floor(itemProperties.height - 2)) {
+            control.style.fontSize = Math.floor(itemProperties.height - 3) + 'px';
+        } else {
+            control.style.fontSize = itemProperties.fontSizeControl + 'px';
+        }
+        control.style.border = '1px solid #E6E6E6';
+        control.style.display = 'block';
+
+        var optionElement = document.createElement('option');
+        optionElement.value = '';
+        optionElement.innerHTML = '';
+        if(itemProperties.value=='') {
+            optionElement.selected=true;
+        }
+        control.appendChild(optionElement);
+
+        optionElement = document.createElement('option');
+        optionElement.value = '1';
+        optionElement.innerHTML = 'Yes';
+        if(itemProperties.value=='1') {
+            optionElement.selected=true;
+        }
+        control.appendChild(optionElement);
+
+        optionElement = document.createElement('option');
+        optionElement.value = '0';
+        optionElement.innerHTML = 'No';
+        if(itemProperties.value=='0') {
+            optionElement.selected=true;
+        }
+        control.appendChild(optionElement);
+
+        if (itemProperties.readOnly) {
+            control.disabled = 'disabled';
+            control.style.cursor = "not-allowed";
+        }
+        return control;
     }
 }
 
