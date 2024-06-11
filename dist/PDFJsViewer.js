@@ -94796,16 +94796,24 @@ class PDFJsViewer {
 
                 // Check for custom closures
                 Object.entries(this.idClosureOverrides).forEach(([id, closure]) => {
-                    const item = jQuery("#" + id);
+                    const item = jQuery(`[id='${id}']`);
                     const elementPropertiesWithValues = this.getElementPropertiesWithValues(item[0]);
                     if (closure) {
                         const control = closure(elementPropertiesWithValues, viewport);
                         if (control) {
                             const parent = item.parent();
-                            jQuery("#" + id).remove();
+                            jQuery(`[id='${id}']`).remove();
                             parent[0].appendChild(control);
                         }
                     }
+                });
+
+                // Remove inline styles that PDF.js base library adds to annotationLayer elements so that customization of CSS is easier
+                const inputElements = jQuery('[data-element-id]');
+                inputElements.each(function() {
+                    jQuery(this).css('background-color', '');
+                    jQuery(this).css('color', '');
+                    jQuery(this).css('margin-left', '3px');
                 });
             });
         } catch (error) {
