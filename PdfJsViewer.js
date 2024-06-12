@@ -281,7 +281,7 @@ class PDFJsViewer {
         return this.currentPageNumber;
     }
 
-    async render(width = false, height = false, pdfUrl, pdfDataUrl, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
+    async render(width = false, height = false, pdfUrl, pdfDataUrl = null, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
         if (width == false && height == false) {
             throw new Error("At least one dimension must be specified.");
         }

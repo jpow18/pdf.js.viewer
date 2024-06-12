@@ -109,17 +109,15 @@ var reqPostRender = function () {
 var target = document.getElementById('form_pdf_target');
 const pdfJsViewer = new PDFJsViewer('form_pdf_target');
 
-// Set the PDF URL and form data URL
+// Set the PDF URL and form data URL (data URL can be null)
 var pdfName = 'genericPdfUrl';
 var dataName = 'genericUrl';
 
 // Set the post-render hook
 pdfJsViewer.setPostRenderHook(reqPostRender);
 
-// Apply necessary styles to the target container
+// Apply any necessary styles to the target container
 target.style.setProperty('position', 'relative');
-
-// Render the PDF
 pdfJsViewer.render(1050, 1050, pdfName, dataName, 1);
 ```
 
