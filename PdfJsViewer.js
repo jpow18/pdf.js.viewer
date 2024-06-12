@@ -42,6 +42,7 @@ class PDFJsViewer {
         this.numPages = null;
         this.currentPageNumber = null;
         this.previousPageNumber = 1;
+        this.elementsOnPage = {};
         this.formData = {};
         this.formRenderingOptions = {};
         this.width = null;
@@ -71,6 +72,10 @@ class PDFJsViewer {
         if (closure.length != 1) {
             throw 'Passed function must accept one arguments: element';
         }
+    }
+
+    getAllPagesElements() {
+        return this.elementsOnPage;
     }
 
     getCurrentPageNumber() {
@@ -127,6 +132,25 @@ class PDFJsViewer {
         return this.PDFViewer.pagesCount;
     }
 
+    getPageElements(pageNumber) {
+        if (typeof this.elementsOnPage[pageNumber] != 'undefined' ) {
+            return this.elementsOnPage[pageNumber];
+        }
+        return [];
+    }
+
+    getPageForElement(elementId){
+        for (let i = 1; i <= this.numPages; i++) {
+            const pageElements = this.elementsOnPage[String(i)];
+            if (pageElements) {
+                if (pageElements.includes(elementId)) {
+                    return i;
+                }
+            }
+        }
+        return false;
+    };
+
     getPdfData() {
         this.savePageData();
         return this.formData;
@@ -152,7 +176,14 @@ class PDFJsViewer {
         if (!this.numPages) {
             this.numPages = loadedDoc.numPages;
             this.currentPageNumber = 1;
-        } 
+        }
+        if (Object.keys(this.elementsOnPage).length === 0) {
+            for (let i = 1; i <= this.numPages; i++) {
+                const page = await this.loadedDoc.getPage(i);
+                const elements = await this.returnFormElementsOnPage(page);
+                this.elementsOnPage[i] = elements;
+            }
+        }
     }
 
     loaderEnd() {
@@ -383,6 +414,15 @@ class PDFJsViewer {
         }
     }
 
+    async returnFormElementsOnPage(page) {
+        const elements = [];
+        const items = await page.getAnnotations();
+        items.forEach(item => {
+            elements.push(item.fieldName);
+        });
+        return elements;
+    }
+
     savePageData() {
         const self = this;
         const inputElements = jQuery('[data-element-id]');
@@ -405,7 +445,7 @@ class PDFJsViewer {
                 this.formData[key] = tempData2[key].value;
             }
             else {
-                this.formData[key] = tempData[key]
+                this.formData[key] = tempData[key];
             }
         }
     }
