@@ -248,7 +248,7 @@ class PDFJsViewer {
         }
     }
 
-    async maskYesNo(id, pdfUrl, pageNumber) {
+    async maskYesNo(id) {
         let c = function(itemProperties, viewport) {
             return this.yesNoDropDown(itemProperties, viewport);
         };
