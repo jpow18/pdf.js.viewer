@@ -198,8 +198,8 @@
   }
 
   .buttonWidgetAnnotation:is(.checkBox, .radioButton) :focus{
-    background-image:none;
-    background-color:transparent;
+    /* background-image:none;
+    background-color:transparent; */
   }
 
   .buttonWidgetAnnotation.checkBox :focus{

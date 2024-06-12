@@ -1,6 +1,6 @@
 {
   "name": "@jpow18/pdf.js.viewer",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "main": "./PdfJsViewer.js",
   "type": "module",
   "scripts": {
@@ -19,7 +19,9 @@
   ],
   "files": [
     "dist/PDFJsViewer.js",
-    "pdf.js.viewer.css"
+    "pdf.js.viewer.css", 
+    "LICENSE",
+    "README.md"
   ],
   "author": "jpow18",
   "license": "MIT",

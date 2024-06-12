@@ -51,6 +51,26 @@ class PDFJsViewer {
         this._postRenderHook = null;
         this.dirty = false;
         this.numberedPageNavigation = true;
+        this.idClosureOverrides = {};
+        this.idValueGetOverrides = {};
+    }
+
+    assertValidControlClosure(closure) {
+        if (typeof closure != 'function') {
+            throw "Passed item is not a function";
+        }
+        if (closure.length != 2) {
+            throw 'Passed function must accept two arguments: itemProperties and viewport';
+        }
+    }
+
+    assertValidIdValueClosure(closure) {
+        if (typeof closure != 'function') {
+            throw "Passed item is not a function";
+        }
+        if (closure.length != 1) {
+            throw 'Passed function must accept one arguments: element';
+        }
     }
 
     getCurrentPageNumber() {
@@ -59,6 +79,40 @@ class PDFJsViewer {
 
     getDirty() {
         return this.dirty;
+    }
+
+    getElementPropertiesWithValues(obj) {
+        let properties = {};
+        Object.getOwnPropertyNames(obj).forEach((prop) => {
+            try {
+                properties[prop] = obj[prop];
+            } catch (e) {
+                properties[prop] = "Inaccessible";
+            }
+        });
+        Object.keys(obj).forEach((prop) => {
+            if (!(prop in properties)) {
+                try {
+                    properties[prop] = obj[prop];
+                } catch (e) {
+                    properties[prop] = "Inaccessible";
+                }
+            }
+        });
+        let proto = Object.getPrototypeOf(obj);
+        while (proto) {
+            Object.getOwnPropertyNames(proto).forEach((prop) => {
+                if (!(prop in properties)) {
+                    try {
+                        properties[prop] = obj[prop];
+                    } catch (e) {
+                        properties[prop] = "Inaccessible";
+                    }
+                }
+            });
+            proto = Object.getPrototypeOf(proto);
+        }
+        return properties;
     }
 
     async getFormValues() {
@@ -73,16 +127,28 @@ class PDFJsViewer {
         return this.PDFViewer.pagesCount;
     }
 
+    getPdfData() {
+        this.savePageData();
+        return this.formData;
+    }
+
     getPreviousPageNumber() {
         return this.previousPageNumber;
     }
-  
+
+    hasErrors(){
+        if (jQuery('[data-invalid]').length>0) {
+            alert('Please correct the invalid data entered first');
+            return true;
+        }
+        return false;
+    }
+
     async loadDocument(url) {
         const pdfDoc = await getDocument(url);
         const loadedDoc = await pdfDoc.promise;
         this.loadedDoc = loadedDoc;
         this.annotationStorage = this.loadedDoc._transport.AnnotationStorage;
-        
         if (!this.numPages) {
             this.numPages = loadedDoc.numPages;
             this.currentPageNumber = 1;
@@ -107,16 +173,17 @@ class PDFJsViewer {
     }
 
     async loadPage(pageNumber) {
+        if (this.hasErrors()) {
+            return false;
+        }
         try {
             if (pageNumber == this.previousPageNumber)
             {
                 return;
             }
-
             this.savePageData();
             var width = this.width;
             let height = this.height;
-
             if (this.PDFPageView) {
                 this.PDFPageView.destroy();
                 this.PDFPageView = null;
@@ -128,12 +195,10 @@ class PDFJsViewer {
             if (childDiv && childDiv.parentNode) {
                 childDiv.parentNode.removeChild(childDiv);
             }
-
             this.loaderStart();
             this.loadedDoc.getPage(pageNumber).then(function() {
                 this.render(width, height, this.pdfUrl, false, pageNumber, this.formData, this.formRenderingOptions);
                 this.loaderEnd();
-
                 if (this.numberedPageNavigation) {
                     this.previousPageNumber = pageNumber;
                 }
@@ -183,6 +248,13 @@ class PDFJsViewer {
         }
     }
 
+    async maskYesNo(id, pdfUrl, pageNumber) {
+        let c = function(itemProperties, viewport) {
+            return this.yesNoDropDown(itemProperties, viewport);
+        };
+        this.setControlRenderClosureById(c.bind(this), id);
+    }
+
     mergeFormData(newFormData) {
         for (const key in newFormData) {
             this.formData[key] = newFormData[key];
@@ -213,34 +285,26 @@ class PDFJsViewer {
         if (width == false && height == false) {
             throw new Error("At least one dimension must be specified.");
         }
-
         this.width = width;
         this.height = height;
-
         if (!pdfUrl) {
             throw new Error("Path to PDF must be given");
         }
-
         let target = document.getElementById(this.targetDiv);
         target.innerHTML ='<div id="loader" style=\"margin:5px\"><i class=\"fa fa-cog fa-spin\"></i></div>';
-
         if (!this.pdfUrl) {
             this.pdfUrl = pdfUrl;
         }
-
         if (pdfDataUrl) {
             this.loadPdfData(pdfDataUrl);
         }
-
         if (values) {
             this.mergeFormData(values);
         }
-
         if (Object.keys(formRenderingOptions).length !== 0)
         {
             this.formRenderingOptions = formRenderingOptions;
         }
-
         try {
             await this.loadDocument(pdfUrl);
             const pdfPage = await this.loadedDoc.getPage(pageNumber);
@@ -258,7 +322,6 @@ class PDFJsViewer {
                     this.loadedDoc.annotationStorage.setValue(foundKey, {value: value});
                 }
             });
-
             const viewport = pdfPage.getViewport({ scale: 1 });
             let viewportWidth = width !== false ? width : Infinity;
             let viewportHeight = height !== false ? height : Infinity;
@@ -267,11 +330,9 @@ class PDFJsViewer {
             const scale = Math.min(scaleX, scaleY);
             const scaledViewport = pdfPage.getViewport({ scale });
             const interactiveForms = formRenderingOptions.interactiveForms;
-
             if (interactiveForms === false) {
                 this.options.annotationMode = AnnotationMode.DISABLE;
             }
-
             this.options.layerProperties = {
                 annotationEditorUIManager: null,
                 annotationStorage: this.loadedDoc.annotationStorage,
@@ -288,7 +349,6 @@ class PDFJsViewer {
                 scale,
                 defaultViewport: scaledViewport,
             });
-
             this.PDFPageView = currentPageView;
             this.PDFPageView.setPdfPage(pdfPage);
             this.loaderEnd();
@@ -296,7 +356,27 @@ class PDFJsViewer {
                 if (this._postRenderHook) {
                     this._postRenderHook();
                 }
-
+                // Check for custom closures
+                Object.entries(this.idClosureOverrides).forEach(([id, closure]) => {
+                    const item = jQuery(`[id='${id}']`);
+                    const elementPropertiesWithValues = this.getElementPropertiesWithValues(item[0]);
+                    if (closure) {
+                        const control = closure(elementPropertiesWithValues, viewport);
+                        if (control) {
+                            const parent = item.parent();
+                            jQuery(`[id='${id}']`).remove();
+                            parent[0].appendChild(control);
+                        }
+                    }
+                });
+                // Remove inline styles that PDF.js base library adds to annotationLayer elements so that customization of CSS is easier
+                const inputElements = jQuery('[data-element-id]');
+                inputElements.each(function() {
+                    jQuery(this).css({
+                        'background-color': '',
+                        'color': ''
+                    });
+                });
             });
         } catch (error) {
             console.error('Error loading document:', error);
@@ -304,19 +384,36 @@ class PDFJsViewer {
     }
 
     savePageData() {
+        const self = this;
         const inputElements = jQuery('[data-element-id]');
         const tempData = {};
         inputElements.each(function() {
             let id = jQuery(this).attr('id');
             let value = jQuery(this).val();
             tempData[id] = value;
-        })
-        for (const prop in tempData) {
-            this.formData[prop] = tempData[prop];
+        });
+        const tempData2 = {};
+        inputElements.each(function() {
+            let id = jQuery(this).attr('id');
+            let originalId = jQuery(this).attr('data-element-id');
+            tempData2[id] = self.loadedDoc._transport.annotationStorage.getValue(originalId, "");
+        });
+        for (const key in tempData2) {
+            // For some reason, the checkbox elements selected by jQuery all have the value "on"
+            // Hence the use of getValue above and merging below
+            if (tempData.hasOwnProperty(key) && tempData[key] == "on") {
+                this.formData[key] = tempData2[key].value;
+            }
+            else {
+                this.formData[key] = tempData[key]
+            }
         }
     }
 
     async savePdfData(saveUrl, token = false) {
+        if (this.hasErrors()) {
+            return false;
+        }
         try {
             this.savePageData();
             if (this.saving) {
@@ -375,12 +472,89 @@ class PDFJsViewer {
         return false;
     }
 
+    setControlRenderClosureById(closure, id) {
+        if (!closure) {
+            try {
+                delete this.idClosureOverrides[id];
+            } catch (e) {
+            }
+        } else {
+            this.assertValidControlClosure(closure);
+            this.idClosureOverrides[id] = closure;
+        }
+    }
+
     setDirty() {
         this.dirty = true;
     }
 
+    setIdValueOverride(closure, id) {
+        if (!closure) {
+            try {
+                delete this.idValueGetOverrides[id];
+            } catch (e) {}
+        } else {
+            this.assertValidIdValueClosure(closure);
+            this.idValueGetOverrides[id] = closure;
+        }
+    }
+
     setPostRenderHook(hook) {
         this._postRenderHook = hook;
+    }
+
+    yesNoDropDown (itemProperties, viewport) {
+        var control = document.createElement('select');
+        if (itemProperties.multiSelect)
+            control.multiple = true;
+        control.style.width = Math.floor(itemProperties.clientWidth - 3) + 'px';
+        control.style.height = Math.floor(itemProperties.clientHeight) + 'px';
+        control.style.textAlign = itemProperties.textAlignment;
+        control.id = itemProperties.id;
+        control.name = itemProperties.id;
+        control.dataset.elementId = itemProperties.dataset.elementId;
+        if (Math.floor(itemProperties.fontSizeControl) >= Math.floor(itemProperties.clientHeight - 2)) {
+            control.style.fontSize = Math.floor(itemProperties.clientHeight - 3) + 'px';
+        } else {
+            control.style.fontSize = itemProperties.fontSizeControl + 'px';
+        }
+        if (itemProperties.style.border == '1px dashed red') {
+            control.style.border = '1px dashed red';
+        }
+        else {
+            control.style.border = '1px solid #E6E6E6';
+        }
+        control.style.display = 'block';
+
+        var optionElement = document.createElement('option');
+        optionElement.value = '';
+        optionElement.innerHTML = '';
+        if(itemProperties.value=='') {
+            optionElement.selected=true;
+        }
+        control.appendChild(optionElement);
+
+        optionElement = document.createElement('option');
+        optionElement.value = '1';
+        optionElement.innerHTML = 'Yes';
+        if(itemProperties.value=='1') {
+            optionElement.selected=true;
+        }
+        control.appendChild(optionElement);
+
+        optionElement = document.createElement('option');
+        optionElement.value = '0';
+        optionElement.innerHTML = 'No';
+        if(itemProperties.value=='0') {
+            optionElement.selected=true;
+        }
+        control.appendChild(optionElement);
+
+        if (itemProperties.readOnly) {
+            control.disabled = 'disabled';
+            control.style.cursor = "not-allowed";
+        }
+        return control;
     }
 }
 

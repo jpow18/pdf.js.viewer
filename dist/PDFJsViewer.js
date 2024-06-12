@@ -94516,7 +94516,6 @@ class PDFJsViewer {
                 properties[prop] = "Inaccessible";
             }
         });
-
         Object.keys(obj).forEach((prop) => {
             if (!(prop in properties)) {
                 try {
@@ -94526,7 +94525,6 @@ class PDFJsViewer {
                 }
             }
         });
-
         let proto = Object.getPrototypeOf(obj);
         while (proto) {
             Object.getOwnPropertyNames(proto).forEach((prop) => {
@@ -94540,7 +94538,6 @@ class PDFJsViewer {
             });
             proto = Object.getPrototypeOf(proto);
         }
-
         return properties;
     }
 
@@ -94578,7 +94575,6 @@ class PDFJsViewer {
         const loadedDoc = await pdfDoc.promise;
         this.loadedDoc = loadedDoc;
         this.annotationStorage = this.loadedDoc._transport.AnnotationStorage;
-        
         if (!this.numPages) {
             this.numPages = loadedDoc.numPages;
             this.currentPageNumber = 1;
@@ -94611,11 +94607,9 @@ class PDFJsViewer {
             {
                 return;
             }
-
             this.savePageData();
             var width = this.width;
             let height = this.height;
-
             if (this.PDFPageView) {
                 this.PDFPageView.destroy();
                 this.PDFPageView = null;
@@ -94627,13 +94621,10 @@ class PDFJsViewer {
             if (childDiv && childDiv.parentNode) {
                 childDiv.parentNode.removeChild(childDiv);
             }
-
             this.loaderStart();
-
             this.loadedDoc.getPage(pageNumber).then(function() {
                 this.render(width, height, this.pdfUrl, false, pageNumber, this.formData, this.formRenderingOptions);
                 this.loaderEnd();
-
                 if (this.numberedPageNavigation) {
                     this.previousPageNumber = pageNumber;
                 }
@@ -94720,34 +94711,26 @@ class PDFJsViewer {
         if (width == false && height == false) {
             throw new Error("At least one dimension must be specified.");
         }
-
         this.width = width;
         this.height = height;
-
         if (!pdfUrl) {
             throw new Error("Path to PDF must be given");
         }
-
         let target = document.getElementById(this.targetDiv);
         target.innerHTML ='<div id="loader" style=\"margin:5px\"><i class=\"fa fa-cog fa-spin\"></i></div>';
-
         if (!this.pdfUrl) {
             this.pdfUrl = pdfUrl;
         }
-
         if (pdfDataUrl) {
             this.loadPdfData(pdfDataUrl);
         }
-
         if (values) {
             this.mergeFormData(values);
         }
-
         if (Object.keys(formRenderingOptions).length !== 0)
         {
             this.formRenderingOptions = formRenderingOptions;
         }
-
         try {
             await this.loadDocument(pdfUrl);
             const pdfPage = await this.loadedDoc.getPage(pageNumber);
@@ -94765,7 +94748,6 @@ class PDFJsViewer {
                     this.loadedDoc.annotationStorage.setValue(foundKey, {value: value});
                 }
             });
-
             const viewport = pdfPage.getViewport({ scale: 1 });
             let viewportWidth = width !== false ? width : Infinity;
             let viewportHeight = height !== false ? height : Infinity;
@@ -94774,11 +94756,9 @@ class PDFJsViewer {
             const scale = Math.min(scaleX, scaleY);
             const scaledViewport = pdfPage.getViewport({ scale });
             const interactiveForms = formRenderingOptions.interactiveForms;
-
             if (interactiveForms === false) {
                 this.options.annotationMode = __webpack_exports__AnnotationMode.DISABLE;
             }
-
             this.options.layerProperties = {
                 annotationEditorUIManager: null,
                 annotationStorage: this.loadedDoc.annotationStorage,
@@ -94795,16 +94775,13 @@ class PDFJsViewer {
                 scale,
                 defaultViewport: scaledViewport,
             });
-
             this.PDFPageView = currentPageView;
             this.PDFPageView.setPdfPage(pdfPage);
             this.loaderEnd();
-            
             this.PDFPageView.draw().then(() => {
                 if (this._postRenderHook) {
                     this._postRenderHook();
                 }
-
                 // Check for custom closures
                 Object.entries(this.idClosureOverrides).forEach(([id, closure]) => {
                     const item = jQuery(`[id='${id}']`);
@@ -94818,14 +94795,13 @@ class PDFJsViewer {
                         }
                     }
                 });
-
                 // Remove inline styles that PDF.js base library adds to annotationLayer elements so that customization of CSS is easier
                 const inputElements = jQuery('[data-element-id]');
                 inputElements.each(function() {
-                    jQuery(this).css('background-color', '');
-                    jQuery(this).css('color', '');
-                    // jQuery(this).css('font-size', '');
-                    jQuery(this).css('margin-left', '3px');
+                    jQuery(this).css({
+                        'background-color': '',
+                        'color': ''
+                    });
                 });
             });
         } catch (error) {
@@ -94834,6 +94810,7 @@ class PDFJsViewer {
     }
 
     savePageData() {
+        const self = this;
         const inputElements = jQuery('[data-element-id]');
         const tempData = {};
         inputElements.each(function() {
@@ -94841,8 +94818,21 @@ class PDFJsViewer {
             let value = jQuery(this).val();
             tempData[id] = value;
         });
-        for (const prop in tempData) {
-            this.formData[prop] = tempData[prop];
+        const tempData2 = {};
+        inputElements.each(function() {
+            let id = jQuery(this).attr('id');
+            let originalId = jQuery(this).attr('data-element-id');
+            tempData2[id] = self.loadedDoc._transport.annotationStorage.getValue(originalId, "");
+        });
+        for (const key in tempData2) {
+            // For some reason, the checkbox elements selected by jQuery all have the value "on"
+            // Hence the use of getValue above and merging below
+            if (tempData.hasOwnProperty(key) && tempData[key] == "on") {
+                this.formData[key] = tempData2[key].value;
+            }
+            else {
+                this.formData[key] = tempData[key];
+            }
         }
     }
 
