@@ -37,7 +37,7 @@ The method `getFormValues()` will return an object containing any values in the 
 `
 { elementId: {"value": value}, elementId2: {"value": value2} }
 `
-### Example Usage
+### Simple Example Usage
 ```
 <script  type="module">
 	let  pdfContainer = 'outerDiv';
@@ -55,6 +55,72 @@ The method `getFormValues()` will return an object containing any values in the 
 </script>
 
 <div id="outerDiv"></div>
+```
+
+### Using postRenderHook
+
+The `postRenderHook` allows you to execute custom logic immediately after the PDF rendering process is complete. This can be particularly useful for adding additional interactivity or styling adjustments to form elements within the rendered PDF.
+
+To use `postRenderHook`, follow these steps:
+
+1. Define a JavaScript function containing your custom logic.
+2. Set this function as the `postRenderHook` on your `PDFJsViewer` instance.
+3. Call the `render` method as usual.
+
+#### Example
+```
+// Define the post-render hook function
+var reqPostRender = function () {
+    jQuery('.pdf input:checkbox').focus(
+        function(){
+            jQuery(this).parent('div').addClass('focus');
+        }).blur(
+        function(){
+            jQuery(this).parent('div').removeClass('focus');
+        }
+    );
+
+    jQuery(':input').last().on('keydown', function (e) {
+        if (e.keyCode == 9) {
+            jQuery('input').first().focus();
+            e.preventDefault();
+            return false;
+        }
+        if (e.keyCode == 10 || e.keyCode == 13) {
+            e.preventDefault();
+        }
+    });
+
+    const sectionElements = jQuery('[data-annotation-id]');
+    sectionElements.each(function() {
+        if (jQuery(this).hasClass('buttonWidgetAnnotation') && jQuery(this).hasClass('checkBox')) {
+            let currentTop = parseFloat(jQuery(this).css('top'));
+            let newTop = currentTop - 1;
+            jQuery(this).css('top', newTop);
+
+            let currentLeft = parseFloat(jQuery(this).css('left'));
+            let newLeft = currentLeft + 4;
+            jQuery(this).css('left', newLeft);
+        }
+    });
+};
+
+// Initialize the PDF viewer and set the post-render hook
+var target = document.getElementById('form_pdf_target');
+const pdfJsViewer = new PDFJsViewer('form_pdf_target');
+
+// Set the PDF URL and form data URL
+var pdfName = 'genericPdfUrl';
+var dataName = 'genericUrl';
+
+// Set the post-render hook
+pdfJsViewer.setPostRenderHook(reqPostRender);
+
+// Apply necessary styles to the target container
+target.style.setProperty('position', 'relative');
+
+// Render the PDF
+pdfJsViewer.render(1050, 1050, pdfName, dataName, 1);
 ```
 
 ## License
