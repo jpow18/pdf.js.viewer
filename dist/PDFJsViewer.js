@@ -94645,13 +94645,6 @@ class PDFJsViewer {
                 this.PDFPageView.destroy();
                 this.PDFPageView = null;
             }
-
-            // If loadPage is called as part of navigating to a new page, 
-            // Must remove the previous pages div for proper rendering
-            const childDiv = document.querySelector('.page');
-            if (childDiv && childDiv.parentNode) {
-                childDiv.parentNode.removeChild(childDiv);
-            }
             this.loaderStart();
             this.loadedDoc.getPage(pageNumber).then(function() {
                 this.render(width, height, this.pdfUrl, false, pageNumber, this.formData, this.formRenderingOptions);
@@ -94719,23 +94712,27 @@ class PDFJsViewer {
     }
 
     navigateToNextPage() {
-        if (this.currentPageNumber >= this.numPages) {
-            return this.currentPageNumber;
+        try {
+            if (this.currentPageNumber==this.numPages)
+                return this.currentPageNumber;
+            return this.currentPageNumber+1;
         }
-        this.numberedPageNavigation = false;
-        this.previousPageNumber = this.currentPageNumber;
-        this.currentPageNumber++;
-        return this.currentPageNumber;
+        catch(e) {
+            alert(e.message);
+        }
+        return false;
     }
 
     navigateToPreviousPage() {
-        if (this.currentPageNumber <= 1) {
-            return this.currentPageNumber;
+        try {
+            if (this.currentPageNumber==1)
+                return 1;
+            return this.currentPageNumber-1;
         }
-        this.numberedPageNavigation = false;
-        this.previousPageNumber = this.currentPageNumber;
-        this.currentPageNumber--;
-        return this.currentPageNumber;
+        catch(e) {
+            alert(e.message);
+        }
+        return false;
     }
 
     async render(width = false, height = false, pdfUrl, pdfDataUrl = null, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
@@ -94833,6 +94830,10 @@ class PDFJsViewer {
                         'background-color': '',
                         'color': ''
                     });
+                    if (jQuery(this).css('background-color') === 'rgba(0, 0, 0, 0)' || jQuery(this).css('background-color') === 'transparent') {
+                        // Remove the background color
+                        jQuery(this).css('background-color', '');
+                    }
                 });
             });
         } catch (error) {
