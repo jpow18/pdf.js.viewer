@@ -94444,13 +94444,10 @@ class PDFJsViewer {
             container: document.getElementById(this.targetDiv),
             eventBus: this.eventBus,
         };
-        // Child element is essential for functioning of pdf.js
-        let currentStyle = this.options.container.style.cssText;
-        let newStyle = "position: absolute;";
-        this.options.container.style = `${currentStyle} ${newStyle}`;
-        let childDiv = document.createElement('div');
-        childDiv.setAttribute('id', 'innerContainer');
-        this.options.container.appendChild(childDiv);
+        this.options.container.style.position = 'absolute';
+        this.innerContainer = document.createElement('div');
+        this.innerContainer.id = 'innerContainer';
+        this.options.container.appendChild(this.innerContainer);
 
         this.PDFViewer = new __webpack_exports__PDFViewer({
             ...this.options,
@@ -94559,19 +94556,13 @@ class PDFJsViewer {
     }
 
     getPageElements(pageNumber) {
-        if (typeof this.elementsOnPage[pageNumber] != 'undefined' ) {
-            return this.elementsOnPage[pageNumber];
-        }
-        return [];
+        return this.elementsOnPage[pageNumber] || [];
     }
 
     getPageForElement(elementId){
         for (let i = 1; i <= this.numPages; i++) {
-            const pageElements = this.elementsOnPage[String(i)];
-            if (pageElements) {
-                if (pageElements.includes(elementId)) {
-                    return i;
-                }
+            if (this.elementsOnPage[i]?.includes(elementId)) {
+                return i;
             }
         }
         return false;
@@ -94634,10 +94625,7 @@ class PDFJsViewer {
             return false;
         }
         try {
-            if (pageNumber == this.previousPageNumber)
-            {
-                return;
-            }
+
             this.savePageData();
             var width = this.width;
             let height = this.height;
@@ -94706,33 +94694,15 @@ class PDFJsViewer {
     }
 
     mergeFormData(newFormData) {
-        for (const key in newFormData) {
-            this.formData[key] = newFormData[key];
-        }
+        Object.assign(this.formData, newFormData);
     }
 
     navigateToNextPage() {
-        try {
-            if (this.currentPageNumber==this.numPages)
-                return this.currentPageNumber;
-            return this.currentPageNumber+1;
-        }
-        catch(e) {
-            alert(e.message);
-        }
-        return false;
+        return this.currentPageNumber < this.numPages ? this.currentPageNumber + 1 : this.currentPageNumber;
     }
 
     navigateToPreviousPage() {
-        try {
-            if (this.currentPageNumber==1)
-                return 1;
-            return this.currentPageNumber-1;
-        }
-        catch(e) {
-            alert(e.message);
-        }
-        return false;
+        return this.currentPageNumber > 1 ? this.currentPageNumber - 1 : 1;
     }
 
     async render(width = false, height = false, pdfUrl, pdfDataUrl = null, pageNumber = 1, values = {}, formRenderingOptions  = {}) {
@@ -94842,12 +94812,8 @@ class PDFJsViewer {
     }
 
     async returnFormElementsOnPage(page) {
-        const elements = [];
         const items = await page.getAnnotations();
-        items.forEach(item => {
-            elements.push(item.fieldName);
-        });
-        return elements;
+        return items.map(item => item.fieldName);
     }
 
     savePageData() {
@@ -94939,12 +94905,9 @@ class PDFJsViewer {
         return false;
     }
 
-    setControlRenderClosureById(closure, id) {
+     setControlRenderClosureById(closure, id) {
         if (!closure) {
-            try {
                 delete this.idClosureOverrides[id];
-            } catch (e) {
-            }
         } else {
             this.assertValidControlClosure(closure);
             this.idClosureOverrides[id] = closure;
@@ -94955,11 +94918,9 @@ class PDFJsViewer {
         this.dirty = true;
     }
 
-    setIdValueOverride(closure, id) {
+     setIdValueOverride(closure, id) {
         if (!closure) {
-            try {
                 delete this.idValueGetOverrides[id];
-            } catch (e) {}
         } else {
             this.assertValidIdValueClosure(closure);
             this.idValueGetOverrides[id] = closure;
