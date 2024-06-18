@@ -3,7 +3,6 @@ import { PDFViewer, PDFPageView, EventBus, SimpleLinkService, DownloadManager } 
 import { WorkerMessageHandler } from 'pdfjs-dist/build/pdf.worker';
 import jQuery from 'jquery';
 
-
 class PDFJsViewer {
     constructor(targetDiv, viewerConfigOptions = {}) {
         this.targetDiv = targetDiv;
@@ -22,7 +21,6 @@ class PDFJsViewer {
         this.innerContainer = document.createElement('div');
         this.innerContainer.id = 'innerContainer';
         this.options.container.appendChild(this.innerContainer);
-
         this.PDFViewer = new PDFViewer({
             ...this.options,
             linkService: this.linkService,
@@ -69,6 +67,51 @@ class PDFJsViewer {
         if (closure.length != 1) {
             throw 'Passed function must accept one arguments: element';
         }
+    }
+
+    async associateFile(saveUrl, formData) {
+        try {
+            this.loaderStart();
+            const success = await new Promise((resolve, reject) => {
+                jQuery.ajax({
+                    url: saveUrl,
+                    dataType: "json",
+                    processData: false,
+                    contentType: false,
+                    async: true, // Ensure async is true for asynchronous behavior
+                    data: formData,
+                    method: "POST",
+                    success: function(results) {
+                        try {
+                            if (results.success) {
+                                resolve(results); // Resolve the promise with results
+                            } else {
+                                if (typeof results.message !== 'undefined') {
+                                    alert(results.message);
+                                }
+                                resolve(false); // Resolve with false on failure
+                            }
+                        } catch (e) {
+                            console.error('Error in success callback:', e);
+                            resolve(false); // Resolve with false on error
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('AJAX error:', textStatus, errorThrown);
+                        reject(false); // Reject the promise on AJAX error
+                    },
+                    complete: () => {
+                        this.loaderEnd(true); // Maintain `this` context
+                    }
+                });
+            });
+            return success; // Return the result of the promise
+        } catch (e) {
+            console.error('Error in associateFile:', e);
+            alert(e.message);
+            this.loaderEnd(true);
+        }
+        return false;
     }
 
     getAllPagesElements() {
@@ -133,7 +176,7 @@ class PDFJsViewer {
         return this.elementsOnPage[pageNumber] || [];
     }
 
-    getPageForElement(elementId){
+    getPageForElement(elementId) {
         for (let i = 1; i <= this.numPages; i++) {
             if (this.elementsOnPage[i]?.includes(elementId)) {
                 return i;
@@ -188,8 +231,6 @@ class PDFJsViewer {
             if (icon.length > 0) {
                 icon.hide();
                 icon.after('<div id="loader" style="display:block;"><font style="font-size:150%"><i class="fa fa-cog fa-spin"></i></font></div>');
-            } else {
-                console.error('Icon not found');
             }
         }
     }
@@ -203,14 +244,8 @@ class PDFJsViewer {
             this.savePageData();
             var width = this.width;
             let height = this.height;
-            if (this.PDFPageView) {
-                this.PDFPageView.destroy();
-                this.PDFPageView = null;
-            }
-            this.loaderStart();
             this.loadedDoc.getPage(pageNumber).then(function() {
                 this.render(width, height, this.pdfUrl, false, pageNumber, this.formData, this.formRenderingOptions);
-                this.loaderEnd();
                 if (this.numberedPageNavigation) {
                     this.previousPageNumber = pageNumber;
                 }
@@ -250,7 +285,6 @@ class PDFJsViewer {
                         this.loaderEnd();
                     },
                     complete: () => {
-                        // this.loaderEnd();
                     }
                 });
             } catch (e) {
@@ -304,11 +338,12 @@ class PDFJsViewer {
             this.formRenderingOptions = formRenderingOptions;
         }
         try {
-            await this.loadDocument(pdfUrl);
+            if (!this.loadedDoc) {
+                await this.loadDocument(pdfUrl);
+            }
             const pdfPage = await this.loadedDoc.getPage(pageNumber);
             const annotations = await pdfPage.getAnnotations();
             this.annotations = annotations;
-            // Add values passed to render to annotation storage for eventual rendering
             Object.entries(this.formData).forEach(([key, value]) => {
                 let foundKey = null;
                 annotations.forEach((annotation) => {
@@ -354,7 +389,6 @@ class PDFJsViewer {
                 if (this._postRenderHook) {
                     this._postRenderHook();
                 }
-                // Check for custom closures
                 Object.entries(this.idClosureOverrides).forEach(([id, closure]) => {
                     const item = jQuery(`[id='${id}']`);
                     const elementPropertiesWithValues = this.getElementPropertiesWithValues(item[0]);
@@ -371,11 +405,9 @@ class PDFJsViewer {
                 const inputElements = jQuery('[data-element-id]');
                 inputElements.each(function() {
                     jQuery(this).css({
-                        'background-color': '',
                         'color': ''
                     });
                     if (jQuery(this).css('background-color') === 'rgba(0, 0, 0, 0)' || jQuery(this).css('background-color') === 'transparent') {
-                        // Remove the background color
                         jQuery(this).css('background-color', '');
                     }
                 });
@@ -386,7 +418,6 @@ class PDFJsViewer {
     }
 
     async returnFormElementsOnPage(page) {
-        const elements = [];
         const items = await page.getAnnotations();
         return items.map(item => item.fieldName);
     }
@@ -480,9 +511,58 @@ class PDFJsViewer {
         return false;
     }
 
-     setControlRenderClosureById(closure, id) {
+    async setComment(saveUrl, submissionId, comment, csrfToken) {
+        try {
+            this.loaderStart();
+            const postdata = {
+                id: submissionId,
+                comment: comment,
+                csrf: csrfToken
+            };
+            const success = await new Promise((resolve, reject) => {
+                jQuery.ajax({
+                    dataType: "json",
+                    url: saveUrl,
+                    async: true,
+                    data: postdata,
+                    method: "POST",
+                    success: function(results) {
+                        try {
+                            if (results.success) {
+                                resolve(results);
+                            } else {
+                                if (results.message) {
+                                    alert(results.message);
+                                }
+                                resolve(false);
+                            }
+                        } catch (e) {
+                            console.error('Error in success callback:', e);
+                            resolve(false);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('AJAX error:', textStatus, errorThrown);
+                        reject(false);
+                    },
+                    complete: () => {
+                        this.loaderEnd();
+                    }
+                });
+            });
+
+            return success;
+        } catch (e) {
+            console.error('Error in setComment:', e);
+            alert(e.message);
+            this.loaderEnd();
+            return false;
+        }
+    }
+
+    setControlRenderClosureById(closure, id) {
         if (!closure) {
-                delete this.idClosureOverrides[id];
+            delete this.idClosureOverrides[id];
         } else {
             this.assertValidControlClosure(closure);
             this.idClosureOverrides[id] = closure;
@@ -493,9 +573,9 @@ class PDFJsViewer {
         this.dirty = true;
     }
 
-     setIdValueOverride(closure, id) {
+    setIdValueOverride(closure, id) {
         if (!closure) {
-                delete this.idValueGetOverrides[id];
+            delete this.idValueGetOverrides[id];
         } else {
             this.assertValidIdValueClosure(closure);
             this.idValueGetOverrides[id] = closure;
@@ -504,6 +584,101 @@ class PDFJsViewer {
 
     setPostRenderHook(hook) {
         this._postRenderHook = hook;
+    }
+
+    async stashPdfData(saveUrl, token = false) {
+        try {
+            this.savePageData();
+            let success = false;
+            let postData = {};
+            for (let datarow in this.formData) {
+                let newName = encodeURIComponent(datarow);
+                postData[newName] = this.formData[datarow];
+            }
+            if (token) {
+                postData.csrf = token;
+            }
+            this.loaderStart();
+            success = await new Promise((resolve, reject) => {
+                jQuery.ajax({
+                    dataType: "json",
+                    url: saveUrl,
+                    data: postData,
+                    method: "POST",
+                    context: this,
+                    success: function(results) {
+                        try {
+                            if (results.success) {
+                                resolve(results);
+                            } else {
+                                if (typeof results.message !== 'undefined') {
+                                    console.error(results.message);
+                                }
+                                resolve(false);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            resolve(false);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('AJAX error: ', textStatus, errorThrown);
+                        resolve(false);
+                    },
+                    complete: function() {
+                        this.loaderEnd();
+                    }
+                });
+            });
+            return success;
+        }
+        catch (e) {
+            this.loaderEnd();
+            alert(e.message);
+        }
+        return false;
+    }
+
+    async stashRemoveAsync(saveUrl) {
+        try {
+            this.loaderStart();
+            let success = await new Promise((resolve, reject) => {
+                jQuery.ajax({
+                    dataType: "json",
+                    url: saveUrl,
+                    method: "GET",
+                    context: this,
+                    success: function(results) {
+                        try {
+                            if (results.success) {
+                                resolve(results);
+                            } else {
+                                if (typeof results.message !== 'undefined') {
+                                    console.error(results.message);
+                                }
+                                resolve(false);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            resolve(false);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('AJAX error: ', textStatus, errorThrown);
+                        resolve(false);
+                    },
+                    complete: function() {
+                        this.loaderEnd();
+                    }
+                });
+            });
+            return success;
+        }
+        catch (e) {
+            this.loaderEnd();
+            alert(e.message);
+        }
+        return false;
     }
 
     yesNoDropDown (itemProperties, viewport) {
