@@ -94834,7 +94834,9 @@ class PDFJsViewer {
                     jQuery(this).css({
                         'color': ''
                     });
-                    if (jQuery(this).css('background-color') === 'rgba(0, 0, 0, 0)' || jQuery(this).css('background-color') === 'transparent') {
+                    if (jQuery(this).css('background-color') === 'rgba(0, 0, 0, 0)'
+                        || jQuery(this).css('background-color') === 'transparent'
+                            || jQuery(this).css('background-color') === 'rgb(255, 255, 255)') {
                         jQuery(this).css('background-color', '');
                     }
                 });
