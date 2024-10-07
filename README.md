@@ -32,6 +32,14 @@ To render forms non-interactively (i.e., to simply display them without interact
 ```
 viewer.render(800,800,page,target,values, {interactiveForms: false});
 ```
+
+### Loading a Specific Page and Getting Form Values
+
+You can load a specific page using the following method:
+`
+await viewer.loadPage(2);
+`
+
 #### Retrieve Form Values
 The method `getFormValues()` will return an object containing any values in the form elements in the format: 
 `
@@ -52,6 +60,9 @@ The method `getFormValues()` will return an object containing any values in the 
 		'interactiveForms':  false
 	}
 	viewer.render(800, 800, './pdfs/f1040.pdf', 1, insertFormvalues, formConfigOptions)
+    
+    await viewer.loadPage(2);
+    const enteredValues = await viewer.getFormValues();
 </script>
 
 <div id="outerDiv"></div>
