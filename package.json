@@ -1,6 +1,6 @@
 {
   "name": "@jpow18/pdf.js.viewer",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "main": "./PdfJsViewer.js",
   "type": "module",
   "scripts": {
@@ -19,18 +19,19 @@
   ],
   "files": [
     "dist/PDFJsViewer.js",
-    "pdf.js.viewer.css", 
+    "pdf.js.viewer.css",
     "LICENSE",
     "README.md"
   ],
   "author": "jpow18",
   "license": "MIT",
   "dependencies": {
-    "@rollup/plugin-commonjs": "^25.0.8",
-    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-commonjs": "^28.0.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
     "jquery": "^3.7.1",
-    "pdfjs-dist": "^4.2.67",
-    "rollup": "^4.18.0"
+    "pdf.js": "^0.1.0",
+    "pdfjs-dist": "^4.7.76",
+    "rollup": "^4.24.0"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^6.1.0"
