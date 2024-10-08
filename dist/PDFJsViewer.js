@@ -95660,6 +95660,16 @@ class PDFJsViewer {
                         jQuery(this).css('background-color', '');
                     }
                 });
+
+                // The "presentation" canvas, on some screens, overflows the canvasWrapper element; this
+                // leads the form elements to be misplaced. This code restricts the presentation element size
+                const canvasPresentationElement = jQuery('canvas[role="presentation"]');
+                canvasPresentationElement.css({
+                  'width': '100%',
+                  'height': '100%',
+                  'max-width': '100%',
+                  'max-height': '100%'
+                });
             });
         } catch (error) {
             console.error('Error loading document:', error);
