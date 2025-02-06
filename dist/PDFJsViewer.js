@@ -95593,13 +95593,20 @@ class PDFJsViewer {
             this.annotations = annotations;
             Object.entries(this.formData).forEach(([key, value]) => {
                 let foundKey = null;
+                let isCheckbox = false;
+
                 annotations.forEach((annotation) => {
                     if (Object.values(annotation).includes(key)) {
                         foundKey = annotation.id;
+                        isCheckbox = annotation.fieldType === "Btn" ? true : false;
                     }
                 });
-                if (foundKey!== null) {
-                    this.loadedDoc.annotationStorage.setValue(foundKey, {value: value});
+                
+                if (foundKey !== null) {
+                    // If it's a checkbox and value is an empty string, set it to "Off"
+                    const cleanedValue = isCheckbox && value === "" ? "Off" : value;
+
+                    this.loadedDoc.annotationStorage.setValue(foundKey, { value: cleanedValue });
                 }
             });
             const viewport = pdfPage.getViewport({ scale: 1 });
