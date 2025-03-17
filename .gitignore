@@ -1,7 +1,7 @@
+.idea
 node_modules
 pdfs
 dist/index-1mKPwbOg.js
 dist/index-d_5PhoNR.js
-rollup.config.js   
 index.html
 package-lock.json

@@ -612,3 +612,14 @@
   height:0;
   display:none;
 }
+
+/**
+
+We'll need to ensure that these two new CSS variables are defined
+@see https://github.com/mozilla/pdf.js/pull/19469
+
+ */
+.pdf .page {
+  --user-unit:1;
+  --total-scale-factor:calc(var(--scale-factor) * var(--user-unit));
+}
