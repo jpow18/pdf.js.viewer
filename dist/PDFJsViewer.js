@@ -99008,7 +99008,12 @@ var jqueryExports = requireJquery();
 var jQuery = /*@__PURE__*/getDefaultExportFromCjs(jqueryExports);
 
 class PDFJsViewer {
-    constructor(targetDiv, viewerConfigOptions = {}) {
+    /**
+     * @param {string} targetDiv DOM ID of the container of the web PDF viewer
+     * @param {Object} [viewerConfigOptions] Default options passed to the PDF viewer
+     * @param {Object} [documentOptions] Additional options (besides PDF URL) to pass to pdfjsLib.getDocument()
+     */
+    constructor(targetDiv, viewerConfigOptions = {}, documentOptions = {}) {
         this.targetDiv = targetDiv;
         this.worker = new __webpack_exports__WorkerMessageHandler();
         this.eventBus = new __webpack_exports__EventBus();
@@ -99016,6 +99021,7 @@ class PDFJsViewer {
         this.linkService = new __webpack_exports__SimpleLinkService();
         this.PDFPageView = null;
         this.activePageView = null;
+        this.documentOptions = documentOptions;
         this.options = {
             ...viewerConfigOptions,
             container: document.getElementById(this.targetDiv),
@@ -99207,7 +99213,10 @@ class PDFJsViewer {
     }
 
     async loadDocument(url) {
-        const pdfDoc = await __webpack_exports__getDocument(url);
+        const options = {...this.documentOptions};
+        options.url = url;
+
+        const pdfDoc = await __webpack_exports__getDocument(options);
         const loadedDoc = await pdfDoc.promise;
         this.loadedDoc = loadedDoc;
         this.annotationStorage = this.loadedDoc._transport.AnnotationStorage;
