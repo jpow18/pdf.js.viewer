@@ -98781,7 +98781,7 @@ class PDFJsViewer {
   }
 
   async getFormValues() {
-    return this.loadedDoc._transport.annotationStorage.getAll();
+    return Object.fromEntries(this.loadedDoc._transport.annotationStorage);
   }
 
   getLoadedDoc() {
@@ -99037,7 +99037,7 @@ class PDFJsViewer {
       const interactiveForms =
         "interactiveForms" in formRenderingOptions
           ? formRenderingOptions.interactiveForms
-          : false;
+          : true;
       if (interactiveForms === false) {
         this.options.annotationMode = AnnotationMode$1.DISABLE;
       }
